@@ -46,11 +46,14 @@ Spree::Order.class_eval do
     Spree::Money.new(remaining_total_after_wallet)
   end
 
-  def process_payments!    
-    if pending_payments.empty? && wallet_payments.empty?
+  def process_payments!
+    # Don't run if there is nothing to pay.
+    return if payment_total >= total
+    # Prevent orders from transitioning to complete without a successfully processed payment.
+    if unprocessed_payments.empty? && wallet_payments.empty?
       raise Spree::Core::GatewayError.new Spree.t(:no_pending_payments)
     else
-      [pending_payments, wallet_payments].flatten.each do |payment|
+      [unprocessed_payments, wallet_payments].flatten.each do |payment|
         break if payment_total >= total
 
         payment.process!
